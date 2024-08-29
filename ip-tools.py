@@ -1,11 +1,12 @@
 import re
+import sys
 
 
 class IpTools:
-    def isIpv4(self, input):
+    def isIpv4(self, string):
         # Regex to match IPv4 address
         regex = r"^((([0-9])|([1-9][0-9])|(1[0-9]{2,2})|(2[0-4][0-9])|(25[0-5]))\.){3,3}(([0-9])|([1-9][0-9])|(1[0-9]{2,2})|(2[0-4][0-9])|(25[0-5]))$"
-        if re.fullmatch(regex, input):
+        if re.fullmatch(regex, string):
             return True
         return False
 
@@ -28,3 +29,16 @@ for entry in isIpMap.keys():
         print(
             f"{entry} expected {isIpMap[entry]} but got output {ipTool.isIpv4(entry)}"
         )
+
+# Try reading user input for IP addresses
+if len(sys.argv) > 1:
+    inputs = sys.argv[1:]
+else:
+    inputs = input("Input comma-delimited list of strings to test:\n").split(",")
+print(f"{len(inputs)} input(s): {inputs}")
+
+for entry in inputs:
+    if ipTool.isIpv4(entry):
+        print(f"{entry} is an IP address.")
+    else:
+        print(f"{entry} is not an IP address.")
