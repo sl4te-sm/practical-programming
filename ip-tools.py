@@ -10,18 +10,22 @@ class IpTools:
             return True
         return False
 
+    def __ipBits(self, ipv4):
+        output = ""
+        for byte in ipv4.split("."):
+            output += f"{int(byte):08b}"
+        return output
+
     def __in_range(self, string, start, end):
         if not self.isIpv4(string):
             return False
 
         # Check against valid byte range
-        def ipBits(ipv4):
-            output = ""
-            for byte in ipv4.split("."):
-                output += f"{int(byte):08b}"
-            return int(output)
-
-        startBits, endBits, stringBits = ipBits(start), ipBits(end), ipBits(string)
+        startBits, endBits, stringBits = (
+            int(self.__ipBits(start)),
+            int(self.__ipBits(end)),
+            int(self.__ipBits(string)),
+        )
         return stringBits >= startBits and stringBits <= endBits
 
     def isPrivateIpv4(self, string):
@@ -30,6 +34,24 @@ class IpTools:
             or self.__in_range(string, "172.16.0.0", "172.31.255.255")
             or self.__in_range(string, "192.168.0.0", "192.168.255.255")
         )
+
+    def inCIDR(self, ipv4, cidr):
+        if not self.isIpv4(ipv4):
+            return False
+
+        ipPart, subnetBits = cidr.split("/")
+        ipPartBits = self.__ipBits(ipPart)
+        start = end = ""
+        # Count for subnet bits
+        for i in range(int(subnetBits)):
+            start += ipPartBits[i]
+            end += ipPartBits[i]
+        for i in range(32 - int(subnetBits)):
+            start += "0"
+            end += "1"
+
+        ipv4Bits = int(self.__ipBits(ipv4))
+        return ipv4Bits >= int(start) and ipv4Bits <= int(end)
 
 
 ipTool = IpTools()
@@ -64,6 +86,19 @@ for entry in isIpMap.keys():
     if ipTool.isPrivateIpv4(entry) != isIpMap[entry]:
         print(
             f"isPrivateIpv4({entry}) expected {isIpMap[entry]} but got output {ipTool.isPrivateIpv4(entry)}"
+        )
+
+# Test inCIDR
+cidrTests = dict()
+cidrTests[("10.1.30.5", "10.0.0.0/8")] = True
+cidrTests[("10.1.30.5", "10.0.0.0/24")] = False
+cidrTests[("172.18.34.2", "172.16.0.0/12")] = True
+cidrTests[("1.2.3.4", "0.0.0.0/0")] = True
+cidrTests[("0.0.0.0", "255.255.255.255/32")] = False
+for entry in cidrTests:
+    if ipTool.inCIDR(entry[0], entry[1]) != cidrTests[entry]:
+        print(
+            f"inCIDR({entry}) expected {cidrTests[entry]} but got output {ipTool.inCIDR(entry[0], entry[1])}"
         )
 
 # Try reading user input for IP addresses
